@@ -1,0 +1,249 @@
+"""
+RNN Forward Propagation (FPTT) - Detailed Colab Notes
+
+📌 Idea:
+- Unlike ANN, RNN processes input **step by step in a sequence**.
+- Keeps **memory of past inputs** via hidden states.
+- Same weights reused at each step:
+  Wi = input → hidden, Wh = hidden → hidden, Wo = hidden → output
+  b = hidden bias, c = output bias
+
+---
+
+🟢 Equations (per time step t):
+hidden_t = h_t = f(Wi*x_t + Wh*h_(t-1) + b)   # hidden state
+output_t = y_t = f_out(Wo*h_t + c)            # output
+
+Variables:
+x_t = input at t
+h_t = hidden state at t
+h_(t-1) = previous hidden state
+Wi = input→hidden weight
+Wh = hidden→hidden weight
+Wo = hidden→output weight
+b, c = biases
+f = activation (tanh/ReLU/sigmoid)
+f_out = output activation (softmax/sigmoid)
+
+---
+
+🟢 Step by Step Forward:
+
+Sequence: [x1, x2, x3], h0=0
+
+t=1:
+h1 = f(Wi*x1 + Wh*h0 + b)
+y1 = f_out(Wo*h1 + c)
+
+t=2:
+h2 = f(Wi*x2 + Wh*h1 + b)
+y2 = f_out(Wo*h2 + c)
+
+t=3:
+h3 = f(Wi*x3 + Wh*h2 + b)
+y3 = f_out(Wo*h3 + c)
+
+✅ Intuition:
+- h_t carries **memory of all previous inputs**
+- Same weights reused → sequence length can vary
+
+---
+
+🟢 Diagram (Text Form):
+
+x1 → [RNN] → h1 → y1
+        ↑
+       h0
+x2 → [RNN] → h2 → y2
+        ↑
+       h1
+x3 → [RNN] → h3 → y3
+        ↑
+       h2
+
+---
+
+RNN Backpropagation Through Time (BPTT) - Detailed Colab Notes
+
+Forward ke baad hum check karte hain ki output (y1, y2, y3) kitna sahi aaya ya galat → ye difference hota hai Loss.
+Phir hum gradients nikalte hain backward jaake — isse pata chalta hai ki kis weight ne kitni galti kari. Fir hum weights update karte hain
+
+📌 Idea:
+- After forward pass, calculate **loss** (difference between predicted y_t and true y_t)
+- Gradients are **propagated backward through time**
+- **Same weights (Wi, Wh, Wo, b, c)** updated using gradients
+
+---
+
+🟢 Steps:
+
+1️⃣ Forward Pass: calculate h1,h2,h3 and y1,y2,y3
+
+2️⃣ Loss Calculation (example MSE):
+loss = 0.5*((y1-y1_true)^2 + (y2-y2_true)^2 + (y3-y3_true)^2)
+
+3️⃣ Backward Pass (BPTT):
+- Start from last time step (t=3) → compute gradient of loss w.r.t Wo, h3
+- Step backward (t=2, t=1):
+  - Compute gradient of loss w.r.t Wh, Wi, b considering contribution from **future hidden states**
+- Update weights:
+Wi_new = Wi - lr * dLoss/dWi
+Wh_new = Wh - lr * dLoss/dWh
+Wo_new = Wo - lr * dLoss/dWo
+b_new  = b - lr * db
+c_new  = c - lr * dc
+
+
+for updatind Wo>>
+Lioss dependent on Y^ and Y^ dependenet on Output or weight otherwise
+and we have to calculate for every time step
+and we will do it untill convergence
+
+
+
+(Forward equations:
+h_t = f(Wi*x_t + Wh*h_(t-1) + b)
+y_t = f_out(Wo*h_t + c)
+Loss = L(y1, y2, ..., yT)
+
+---
+CHAIN RULE
+Chain rule for weight updates:
+
+1️⃣ Output weights (Wo):
+- Loss depends on y_t → dLoss/dy_t
+- y_t depends on Wo → dy_t/dWo
+- Combine: dLoss/dWo = dLoss/dy_t * dy_t/dWo
+- Update: Wo_new = Wo - lr * sum_t(dLoss/dWo)
+
+2️⃣ Output bias (c):
+- dLoss/dc = dLoss/dy_t * dy_t/dc
+- Update: c_new = c - lr * sum_t(dLoss/dc)
+
+3️⃣ Hidden weights (Wh):
+- Loss depends on h_t → dLoss/dh_t
+- h_t depends on Wh → dh_t/dWh
+- h_t also depends on h_(t-1), so gradient from future steps included
+- Combine: dLoss/dWh = dLoss/dh_t * dh_t/dWh
+- Update: Wh_new = Wh - lr * sum_t(dLoss/dWh)
+
+4️⃣ Input weights (Wi):
+- Loss depends on h_t → dLoss/dh_t
+- h_t depends on Wi → dh_t/dWi
+- Combine: dLoss/dWi = dLoss/dh_t * dh_t/dWi
+- Update: Wi_new = Wi - lr * sum_t(dLoss/dWi)
+
+5️⃣ Hidden bias (b):
+- dLoss/db = dLoss/dh_t * dh_t/db
+- Update: b_new = b - lr * sum_t(dLoss/db)
+
+---
+
+✅ Intuition (Dependency Style):
+- Wo updated first (directly from output error)
+- c updated like Wo
+- h_t gradients include **future steps contribution**
+- Wh, Wi, b updated using **chain rule through hidden state**
+- Same weights reused at all time steps → gradient summed over t
+)
+
+
+
+(Loss depends on y_t → dLoss/dy_t
+y_t depends on h_t → dy_t/dh_t
+h_t depends on Wi → dh_t/dWi
+h_t depends on Wh → dh_t/dWh
+h_t depends on b  → dh_t/db
+h_t depends on h_(t-1) → dh_t/dh_(t-1)
+
+# Combine using chain rule:
+dLoss/dWi = dLoss/dy_t * dy_t/dh_t * dh_t/dWi
+dLoss/dWh = dLoss/dy_t * dy_t/dh_t * dh_t/dWh
+dLoss/db  = dLoss/dy_t * dy_t/dh_t * dh_t/db
+dLoss/dh_(t-1) = dLoss/dy_t * dy_t/dh_t * dh_t/dh_(t-1)
+)
+
+
+✅ Observation:
+- Future hidden states affect gradients of past hidden states
+- Weight sharing allows **learning across sequence lengths**
+
+---
+
+🟢 Diagram (Gradient Flow):
+
+Forward:
+x1 → [RNN] → h1 → y1
+x2 → [RNN] → h2 → y2
+x3 → [RNN] → h3 → y3
+
+Backward:
+y3 → [RNN] ← h3
+y2 → [RNN] ← h2
+y1 → [RNN] ← h1
+
+---
+
+🟢 Key Points:
+- FPTT = Forward Propagation Through Time → compute hidden states & outputs
+- BPTT = Backward Propagation Through Time → compute gradients & update weights
+- Hidden state h_t carries **memory of past inputs**
+- Same weights Wi, Wh, Wo, b, c are **shared and updated across all time steps**
+"""
+
+
+
+---------------------------------------------------------------------------------------------------------------------------
+
+Problems of Simple RNN
+
+"""
+
+
+1️⃣ Short-term memory only:
+   - Works well for short sequences
+   - Example: small sentences or few time steps
+
+    RNN recent info achhe se yaad rakhta hai, lekin old info ko bhool jaata hai.
+
+2️⃣ Long-term dependency issue:
+   - For long sequences (e.g., 50 words), RNN has to train through all time steps
+   - Simple RNN cannot capture long-term memory effectively
+
+    x1 → x2 → x3 → .... → x50
+    ↑                    ↑
+    Start           Important info
+    (Subject)        (Nolan)
+    → RNN long gap ke wajah se connection loose kar deta hai.
+
+3️⃣ Vanishing Gradient:
+   - Gradient becomes too small during backprop → network forgets old information
+
+    0.9 × 0.9 × 0.9 × ... × 50 times = almost 0
+
+    → Gradient = almost zero
+    → Weight update ≈ nahi hoga
+    → Network kuch yaad nahi karega
+    → dLoss/dh3 → dLoss/dh2 → dLoss/dh1 → dLoss/dh0 (gradient ≈ 0)
+
+
+
+4️⃣ Exploding Gradient:
+   - Gradient becomes too large → weights unstable → training can fail
+
+    1.5 × 1.5 × 1.5 × ... × 50 = BOOM 💣
+
+5️⃣ Long chain of rules:
+   - Information must pass through many hidden states
+   - Hard to maintain context over long sequences]
+    x1 → h1 → h2 → h3 → ... → h50 → y
+
+    → Agar h10 weak hua, toh uska effect h50 tak jaayega
+    → Long chain → difficult to maintain context
+
+
+✅ Intuition:
+- RNN = short-term memory specialist
+- Long sequences & long-term dependencies = problematic
+- Solutions: LSTM, GRU, gradient clipping
+"""
