@@ -3,6 +3,7 @@
 This project performs **sentiment analysis** on IMDB movie reviews using a **Simple Recurrent Neural Network (RNN)** built with TensorFlow/Keras.  
 The model predicts whether a given review is **Positive 😊** or **Negative 😞**.
 
+here is streamlit app link:- [https://simple-rnn-by-bharat.streamlit.app/]
 ---
 
 ## 🧠 Model Overview
